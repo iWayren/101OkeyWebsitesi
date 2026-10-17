@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>101 Okey Plus - HD</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 1. ANA MENÜ EKRANI -->
+    <div id="main-menu" class="screen">
+        <div class="top-bar">
+            <div class="profile-box">
+                <div class="avatar-sm">👤</div>
+                <div class="profile-info">
+                    <span class="p-name">Meun Mete</span>
+                    <span class="p-level">Seviye: 4</span>
+                </div>
+            </div>
+            <div class="money-box">
+                <span>💰 47.006</span>
+                <button class="plus-btn">+</button>
+            </div>
+        </div>
+
+        <div class="menu-center">
+            <div class="room-card">
+                <h3>KLASİK ODA</h3>
+                <div class="room-icon">101</div>
+                <label class="online-player-name" for="player-name-input">Oyuncu adın</label>
+                <input id="player-name-input" maxlength="20" placeholder="Adını yaz" value="Oyuncu">
+                <button class="action-btn" id="create-room-btn">ÖZEL ODA OLUŞTUR</button>
+                <div class="room-join-controls">
+                    <input id="join-room-input" maxlength="6" placeholder="Oda kodu">
+                    <button class="action-btn" id="join-room-btn">Katıl</button>
+                </div>
+                <button class="quick-play-btn" id="play-now-btn">Botlarla hemen oyna</button>
+                <p id="room-menu-message" role="status"></p>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="menu-btn" id="add-friend-btn">👥 Arkadaş Ekle</button>
+        </div>
+    </div>
+
+    <div id="room-lobby" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="room-lobby-title">
+        <div class="modal-content room-lobby-card">
+            <h2 id="room-lobby-title">Oda lobisi</h2>
+            <p id="room-lobby-status">Arkadaşlarını davet et.</p>
+            <div class="invite-link-row">
+                <input id="invite-link-input" readonly aria-label="Davet bağlantısı">
+                <button class="action-btn" id="copy-invite-btn">Kopyala</button>
+            </div>
+            <ol id="room-player-list"></ol>
+            <div class="modal-buttons room-lobby-actions">
+                <button class="action-btn red" id="close-room-btn">Odadan ayrıl</button>
+                <button class="action-btn" id="start-room-btn">Botlarla tamamla ve başlat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arkadaş Ekle Modal Penceresi -->
+    <div id="friend-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Arkadaş Ekle</h3>
+            <input type="text" id="friend-name-input" placeholder="Arkadaşınızın Rumuzu...">
+            <div class="modal-buttons">
+                <button id="send-request-btn" class="action-btn">Ekle</button>
+                <button id="close-modal-btn" class="action-btn red">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. OYUN / MASA EKRANI -->
+    <div id="game-screen" class="screen hidden">
+        <div id="turn-indicator">Sıra Bekleniyor...</div>
+        
+        <button class="action-btn red-btn" id="leave-btn" style="position: absolute; top: 12px; left: 15px; z-index: 30; padding: 6px 14px; font-size: 12px;">Masadan Ayrıl</button>
+
+        <div class="player-profile left-player" id="p-box-1"><div class="avatar">2</div><div class="name" id="name-1">Bot 1</div></div>
+        <div class="player-profile top-player" id="p-box-2"><div class="avatar">3</div><div class="name" id="name-2">Bot 2</div></div>
+        <div class="player-profile right-player" id="p-box-3"><div class="avatar">4</div><div class="name" id="name-3">Bot 3</div></div>
+
+        <!-- ORTA MASA MATRİS -->
+        <div id="center-board-grid">
+            <div class="watermark-101">101</div>
+            <div id="opened-sets-container"></div>
+        </div>
+
+        <!-- SAĞ SAHA BİLGİ & BUTON PANELİ -->
+        <div id="right-control-panel">
+            <div class="mode-badges">
+                <span class="badge blue">101 AÇILIŞ</span>
+                <span class="badge green">5 ÇİFT</span>
+                <span class="badge red">4 KİŞİ</span>
+            </div>
+
+            <div id="indicator-info" class="indicator-info" aria-live="polite"></div>
+
+            <div id="deck-and-discard-area">
+                <div class="tile-deck" id="deck-btn" title="Desteden Taş Çek">
+                    <div class="tile-back"><span id="deck-count">106</span></div>
+                </div>
+                <div class="discard-pile" id="discard-pile-box" title="Atılan taştan çek">
+                    <span class="discard-placeholder">Atılan</span>
+                </div>
+            </div>
+
+            <div class="action-buttons-stack">
+                <button class="plus-action-btn" id="open-series-btn"><span class="btn-icon">🎴</span> SERİ AÇ</button>
+                <button class="plus-action-btn" id="open-pairs-btn"><span class="btn-icon">👯</span> ÇİFT AÇ</button>
+                <button class="plus-action-btn grey" disabled>GERİ TOPLA</button>
+                <button class="plus-action-btn grey" id="process-tile-btn" disabled>TAŞLARI İŞLE</button>
+            </div>
+        </div>
+
+        <!-- ALT ISTAKA ALANI -->
+        <div id="my-area">
+            <button class="rack-side-btn left-side" id="cift-diz-btn">
+                <span class="side-icon">👯</span>
+                <span>ÇİFT DİZ</span>
+            </button>
+            
+            <button class="rack-side-btn right-side" id="seri-diz-btn">
+                <span class="side-icon">🎴</span>
+                <span>SERİ DİZ</span>
+            </button>
+
+            <div class="player-profile my-profile" id="p-box-0">
+                <div class="avatar">1</div>
+                <div class="name" id="name-0">Meun Mete</div>
+            </div>
+
+            <div id="rack-stats" aria-live="polite">
+                <span class="rack-stat series-total-stat" id="series-total-stat">Seri toplamı <strong id="potential-meld-total">0</strong><span>/ <span id="series-target">101</span></span></span>
+                <span class="rack-stat">Çift <strong id="available-pair-count">0</strong><span>/ <span id="pairs-target">5</span></span></span>
+                <span class="rack-stat">Seçili <strong id="selected-count">0</strong></span>
+                <span class="rack-stat">Masadaki per <strong id="opened-meld-total">0</strong></span>
+                <span id="meld-action-message" role="status"></span>
+            </div>
+
+            <div id="rack">
+                <div class="rack-logo">101 PLUS</div>
+                <div class="rack-row" id="row-1"></div>
+                <div class="rack-row" id="row-2"></div>
+            </div>
+        </div>
+
+        <div id="hand-result" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="hand-result-title">
+            <div class="modal-content hand-result-card">
+                <h2 id="hand-result-title">El Sonucu</h2>
+                <p id="hand-result-summary"></p>
+                <div class="hand-result-table" aria-label="Oyuncu sıralaması">
+                    <div class="hand-result-columns" aria-hidden="true">
+                        <span>Sıra</span>
+                        <span>Oyuncu</span>
+                        <span>Bu el</span>
+                        <span>Toplam ceza</span>
+                    </div>
+                    <ol id="hand-result-scores"></ol>
+                </div>
+                <div class="modal-buttons">
+                    <button id="play-again-btn" class="action-btn">Yeni El</button>
+                    <button id="result-leave-btn" class="action-btn red">Menü</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/okey-rules.js"></script>
+    <script>
+        const socket = io();
+        const queryRoomCode = new URLSearchParams(window.location.search).get('room');
+        let roomCode = queryRoomCode ? queryRoomCode.toUpperCase() : null;
+        let myPlayerId = null;
+        let quickStart = false;
+        
+        let rackSlots = new Array(30).fill(null);
+        let hasDrawn = false;
+        let isMyTurn = false;
+        let draggedTile = null;
+        let selectedTileIds = new Set();
+        let meldOpenPending = false;
+        let hasOpened = false;
+        let openingMode = null;
+        let openedMelds = [];
+        let isGameOver = false;
+        let isInitialDiscard = false;
+
+        window.addEventListener('pointermove', (event) => {
+            if (!draggedTile) return;
+            const diffX = event.clientX - draggedTile.startX;
+            const diffY = event.clientY - draggedTile.startY;
+            draggedTile.element.style.transform = `translate(${diffX}px, ${diffY}px) scale(1.08)`;
+        });
+
+        window.addEventListener('pointerup', (event) => {
+            if (!draggedTile) return;
+
+            const drag = draggedTile;
+            draggedTile = null;
+            drag.element.style.zIndex = '';
+            drag.element.classList.remove('dragging');
+            drag.element.style.transform = '';
+
+            if (rackSlots[drag.slotIndex]?.id !== drag.tileId) return;
+
+            const elemBelow = document.elementFromPoint(event.clientX, event.clientY);
+            const targetSlot = elemBelow ? elemBelow.closest('.rack-slot') : null;
+            if (!targetSlot) return;
+
+            const targetIndex = Number(targetSlot.dataset.slotIndex);
+            if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= rackSlots.length || drag.slotIndex === targetIndex) return;
+
+            [rackSlots[drag.slotIndex], rackSlots[targetIndex]] = [rackSlots[targetIndex], rackSlots[drag.slotIndex]];
+            renderRack();
+        });
+
+        document.getElementById('create-room-btn').addEventListener('click', () => {
+            quickStart = false;
+            socket.emit('create-room', { name: getPlayerName() });
+        });
+        document.getElementById('play-now-btn').addEventListener('click', () => {
+            quickStart = true;
+            socket.emit('create-room', { name: getPlayerName() });
+        });
+        document.getElementById('join-room-btn').addEventListener('click', joinEnteredRoom);
+        document.getElementById('join-room-input').addEventListener('keydown', event => {
+            if (event.key === 'Enter') joinEnteredRoom();
+        });
+        document.getElementById('player-name-input').addEventListener('keydown', event => {
+            if (event.key === 'Enter') document.getElementById('create-room-btn').click();
+        });
+        document.getElementById('start-room-btn').addEventListener('click', () => socket.emit('start-room-game'));
+        document.getElementById('close-room-btn').addEventListener('click', () => socket.emit('leave-table'));
+        document.getElementById('copy-invite-btn').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(document.getElementById('invite-link-input').value);
+                document.getElementById('room-lobby-status').innerText = 'Davet bağlantısı kopyalandı.';
+            } catch (error) {
+                document.getElementById('invite-link-input').select();
+                document.getElementById('room-lobby-status').innerText = 'Bağlantıyı seçip kopyalayabilirsin.';
+            }
+        });
+
+        function getPlayerName() {
+            const input = document.getElementById('player-name-input');
+            const name = input.value.trim();
+            return name || 'Oyuncu';
+        }
+
+        function joinEnteredRoom() {
+            const code = document.getElementById('join-room-input').value.trim().toUpperCase();
+            if (!/^[A-F0-9]{6}$/.test(code)) {
+                document.getElementById('room-menu-message').innerText = '6 haneli geçerli oda kodu gir.';
+                return;
+            }
+            roomCode = code;
+            socket.emit('join-room', {
+                roomCode,
+                name: getPlayerName(),
+                playerToken: localStorage.getItem(`101-room-token-${roomCode}`) || ''
+            });
+        }
+
+        socket.on('connect', () => {
+            if (!roomCode) return;
+            socket.emit('join-room', {
+                roomCode,
+                name: getPlayerName(),
+                playerToken: localStorage.getItem(`101-room-token-${roomCode}`) || ''
+            });
+        });
+
+        socket.on('room-created', ({ roomCode: code, playerToken }) => {
+            roomCode = code;
+            localStorage.setItem(`101-room-token-${code}`, playerToken);
+            history.replaceState(null, '', `?room=${encodeURIComponent(code)}`);
+            if (quickStart) socket.emit('start-room-game');
+        });
+
+        socket.on('player-session', ({ roomCode: code, playerToken, playerId }) => {
+            roomCode = code;
+            myPlayerId = playerId;
+            localStorage.setItem(`101-room-token-${code}`, playerToken);
+            history.replaceState(null, '', `?room=${encodeURIComponent(code)}`);
+        });
+
+        socket.on('room-error', message => {
+            document.getElementById('room-menu-message').innerText = message;
+            document.getElementById('room-lobby-status').innerText = message;
+        });
+
+        socket.on('lobby-state', data => {
+            roomCode = data.roomCode;
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-screen').classList.toggle('hidden', !data.gameStarted);
+            document.getElementById('room-lobby').classList.toggle('hidden', data.gameStarted);
+            document.getElementById('invite-link-input').value = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(data.roomCode)}`;
+            document.getElementById('room-lobby-title').innerText = `Oda ${data.roomCode}`;
+            document.getElementById('room-lobby-status').innerText = data.gameStarted
+                ? 'Oyun başladı.'
+                : 'Davet bağlantısını arkadaşlarına gönder. Oda 4 kişi olunca otomatik dolmaz; istediğinde botlarla tamamlayıp başlatabilirsin.';
+            const playerList = document.getElementById('room-player-list');
+            playerList.replaceChildren();
+            data.players.forEach((player, index) => {
+                const item = document.createElement('li');
+                item.innerText = `${index + 1}. ${player.name}${player.isBot ? ' · Bot' : player.connected ? ' · Bağlı' : ' · Bağlantı bekleniyor'}`;
+                playerList.appendChild(item);
+            });
+            document.getElementById('start-room-btn').classList.toggle('hidden', data.hostId !== myPlayerId);
+            document.getElementById('start-room-btn').disabled = data.gameStarted;
+        });
+
+        document.getElementById('leave-btn').addEventListener('click', () => {
+            socket.emit('leave-table');
+        });
+
+        document.getElementById('result-leave-btn').addEventListener('click', () => {
+            socket.emit('leave-table');
+        });
+
+        document.getElementById('play-again-btn').addEventListener('click', () => {
+            resetClientGame();
+            socket.emit('next-hand');
+        });
+
+        document.getElementById('open-series-btn').addEventListener('click', () => requestMeldOpen('series'));
+        document.getElementById('open-pairs-btn').addEventListener('click', () => requestMeldOpen('pairs'));
+        document.getElementById('process-tile-btn').addEventListener('click', requestProcessTile);
+
+        function requestMeldOpen(type) {
+            meldOpenPending = true;
+            updateOpenButtons();
+            document.getElementById('meld-action-message').innerText = '';
+            socket.emit('open-meld', { type });
+        }
+
+        function displayTileValue(tile) {
+            return tile.color === 'fake-joker'
+                ? `${tile.representedColor} ${tile.representedValue}`
+                : `${tile.color} ${tile.value}`;
+        }
+
+        function requestProcessTile() {
+            if (openingMode === 'pairs') {
+                if (selectedTileIds.size !== 2) {
+                    document.getElementById('meld-action-message').innerText = 'Çifte eklemek için aynı iki taşı seç.';
+                    return;
+                }
+                const tileIds = [...selectedTileIds];
+                const selectedTiles = tileIds.map(id => rackSlots.find(tile => tile?.id === id));
+                const targetMeld = openedMelds.find(meld => OkeyRules.canProcessPair(selectedTiles, meld));
+                if (!targetMeld) {
+                    document.getElementById('meld-action-message').innerText = 'Seçtiğin çift masadaki açık bir çiftle eşleşmiyor.';
+                    return;
+                }
+
+                meldOpenPending = true;
+                updateOpenButtons();
+                document.getElementById('meld-action-message').innerText = '';
+                socket.emit('process-pair', { tileIds, meldId: targetMeld.id });
+                return;
+            }
+
+            if (selectedTileIds.size !== 1) {
+                document.getElementById('meld-action-message').innerText = 'İşlemek için bir işlek taş seç.';
+                return;
+            }
+
+            const tileId = [...selectedTileIds][0];
+            const tile = rackSlots.find(rackTile => rackTile?.id === tileId);
+            const takeOkeyMeld = openingMode === 'series'
+                ? openedMelds.find(meld => tile && OkeyRules.canTakeOkey(tile, meld))
+                : null;
+            if (takeOkeyMeld) {
+                meldOpenPending = true;
+                updateOpenButtons();
+                document.getElementById('meld-action-message').innerText = '';
+                socket.emit('take-oke', { tileId, meldId: takeOkeyMeld.id });
+                return;
+            }
+
+            const targetMeld = openingMode === 'series'
+                ? openedMelds.find(meld => tile && OkeyRules.canProcessTile(tile, meld))
+                : null;
+            if (!targetMeld) {
+                document.getElementById('meld-action-message').innerText = 'Seçilen taş açık bir pere işlek değil.';
+                return;
+            }
+
+            meldOpenPending = true;
+            updateOpenButtons();
+            document.getElementById('meld-action-message').innerText = '';
+            socket.emit('process-tile', { tileId, meldId: targetMeld.id });
+        }
+
+        function updateOpenButtons() {
+            const disabled = isGameOver || !isMyTurn || !hasDrawn || meldOpenPending;
+            document.getElementById('open-series-btn').disabled = disabled || hasOpened || isInitialDiscard;
+            document.getElementById('open-pairs-btn').disabled = disabled || hasOpened || isInitialDiscard;
+            const selectedTile = selectedTileIds.size === 1
+                ? rackSlots.find(tile => tile?.id === [...selectedTileIds][0])
+                : null;
+            const selectedTiles = [...selectedTileIds].map(id => rackSlots.find(tile => tile?.id === id));
+            const canProcess = openingMode === 'pairs'
+                ? selectedTiles.length === 2 && openedMelds.some(meld => OkeyRules.canProcessPair(selectedTiles, meld))
+                : openingMode === 'series' && selectedTile && openedMelds.some(meld =>
+                    OkeyRules.canProcessTile(selectedTile, meld) || OkeyRules.canTakeOkey(selectedTile, meld));
+            document.getElementById('process-tile-btn').disabled = disabled || !canProcess;
+        }
+
+        const friendModal = document.getElementById('friend-modal');
+        document.getElementById('add-friend-btn').addEventListener('click', () => friendModal.classList.remove('hidden'));
+        document.getElementById('close-modal-btn').addEventListener('click', () => friendModal.classList.add('hidden'));
+        document.getElementById('send-request-btn').addEventListener('click', () => {
+            const name = document.getElementById('friend-name-input').value;
+            if(name.trim()) {
+                alert(`"${name}" kişisine arkadaşlık isteği gönderildi!`);
+                document.getElementById('friend-name-input').value = '';
+                friendModal.classList.add('hidden');
+            }
+        });
+
+        function placeTilesWithGaps(activeTiles, shouldSeparate) {
+            rackSlots.fill(null);
+            const availableGaps = Math.max(0, rackSlots.length - activeTiles.length);
+            let gapsPlaced = 0;
+            let slotIndex = 0;
+
+            activeTiles.forEach((tile, index) => {
+                rackSlots[slotIndex++] = tile;
+                if (index < activeTiles.length - 1 && shouldSeparate(index) && gapsPlaced < availableGaps) {
+                    slotIndex++;
+                    gapsPlaced++;
+                }
+            });
+
+            renderRack();
+        }
+
+        // SERİ DİZ
+        document.getElementById('seri-diz-btn').addEventListener('click', () => {
+            const activeTiles = rackSlots.filter(tile => tile !== null);
+            if (activeTiles.length === 0) return;
+
+            activeTiles.sort((a, b) => {
+                if (a.color === 'joker') return 1;
+                if (b.color === 'joker') return -1;
+                if (a.color !== b.color) return a.color.localeCompare(b.color);
+                return a.value - b.value;
+            });
+
+            placeTilesWithGaps(activeTiles, index => {
+                const current = activeTiles[index];
+                const next = activeTiles[index + 1];
+                return current.color !== next.color || (typeof current.value === 'number' && next.value !== current.value + 1 && next.value !== current.value);
+            });
+        });
+
+        // ÇİFT DİZ
+        document.getElementById('cift-diz-btn').addEventListener('click', () => {
+            const activeTiles = rackSlots.filter(tile => tile !== null);
+            if (activeTiles.length === 0) return;
+
+            activeTiles.sort((a, b) => {
+                if (a.color !== b.color) return a.color.localeCompare(b.color);
+                return a.value - b.value;
+            });
+
+            placeTilesWithGaps(activeTiles, index => {
+                const current = activeTiles[index];
+                const next = activeTiles[index + 1];
+                if (!next) return false;
+
+                const samePair = current.color === next.color && current.value === next.value;
+                if (!samePair) return true;
+
+                let groupStart = index;
+                while (groupStart > 0
+                    && activeTiles[groupStart - 1].color === current.color
+                    && activeTiles[groupStart - 1].value === current.value) {
+                    groupStart--;
+                }
+                return (index - groupStart + 1) % 2 === 0;
+            });
+        });
+
+        // Taş Çekme
+        document.getElementById('deck-btn').addEventListener('click', () => {
+            if (isMyTurn && !hasDrawn) {
+                const deckBtn = document.getElementById('deck-btn');
+                deckBtn.classList.add('draw-anim');
+                setTimeout(() => deckBtn.classList.remove('draw-anim'), 400);
+
+                socket.emit('draw-tile');
+            } else if (hasDrawn) {
+                alert("Bu tur zaten taş çektin, bir taş atmalısın!");
+            } else {
+                alert("Sıra sende değil!");
+            }
+        });
+
+        document.getElementById('discard-pile-box').addEventListener('click', () => {
+            if (isMyTurn && !hasDrawn) {
+                socket.emit('draw-discard');
+            } else if (hasDrawn) {
+                alert("Bu tur zaten taş çektin, bir taş atmalısın!");
+            } else {
+                alert("Sıra sende değil!");
+            }
+        });
+
+        socket.on('return-menu', () => {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            document.getElementById('hand-result').classList.add('hidden');
+            document.getElementById('room-lobby').classList.add('hidden');
+            if (roomCode) localStorage.removeItem(`101-room-token-${roomCode}`);
+            roomCode = null;
+            myPlayerId = null;
+            history.replaceState(null, '', window.location.pathname);
+            resetClientGame();
+        });
+
+        socket.on('action-error', (message) => {
+            meldOpenPending = false;
+            updateOpenButtons();
+            document.getElementById('meld-action-message').innerText = message;
+        });
+
+        socket.on('game-state', (data) => {
+            const { players, deckCount, topDiscard, indicator, okey, firstTurn = false, currentTurnIndex, gameStarted, gameOver = false, result = null, openedMelds: currentOpenedMelds = [] } = data;
+            if (!gameStarted) return;
+            myPlayerId = data.myPlayerId;
+            isGameOver = gameOver;
+            isInitialDiscard = firstTurn && currentTurnIndex === 0;
+            meldOpenPending = false;
+            openedMelds = currentOpenedMelds;
+            
+            document.getElementById('deck-count').innerText = deckCount;
+            
+            players.forEach((p, idx) => {
+                const nameEl = document.getElementById(`name-${idx}`);
+                const boxEl = document.getElementById(`p-box-${idx}`);
+                if (nameEl) nameEl.innerText = p.name;
+                if (boxEl) {
+                    if (idx === currentTurnIndex) boxEl.classList.add('active-turn');
+                    else boxEl.classList.remove('active-turn');
+                }
+            });
+
+            const meIndex = players.findIndex(p => p.id === myPlayerId);
+            if (meIndex !== -1) {
+                const me = players[meIndex];
+                hasDrawn = me.hasDrawn;
+                isMyTurn = (currentTurnIndex === meIndex);
+                hasOpened = me.hasOpened;
+                openingMode = me.openingMode;
+                document.getElementById('play-again-btn').disabled = !me.isHost;
+                document.getElementById('play-again-btn').innerText = me.isHost ? 'Yeni el' : 'Yeni eli oda sahibi başlatır';
+                document.getElementById('series-target').innerText = me.hasOpened ? '1+' : '101';
+                document.getElementById('pairs-target').innerText = me.hasOpened ? '1+' : '5';
+                const handTileIds = new Set(me.tiles.map(tile => tile.id));
+                for (const tileId of selectedTileIds) {
+                    if (!handTileIds.has(tileId)) selectedTileIds.delete(tileId);
+                }
+
+                const newTileIds = new Set(me.tiles
+                    .filter(tile => !rackSlots.some(rackTile => rackTile?.id === tile.id))
+                    .map(tile => tile.id));
+                // İlk girişte taşları yerleştir, sonraki güncellemelerde sırayı bozmadan sadece yeni gelen taşı ekle
+                smartUpdateRack(me.tiles);
+                updateRackStats(me.tiles, currentOpenedMelds);
+                renderRack(newTileIds);
+            }
+            renderOpenedMelds(currentOpenedMelds);
+            document.getElementById('indicator-info').innerText = indicator && okey
+                ? `Gösterge: ${displayTileValue(indicator)} · Okey: ${displayTileValue(okey)}`
+                : '';
+            updateOpenButtons();
+            renderHandResult(result, gameOver);
+
+            const turnIndicator = document.getElementById('turn-indicator');
+            if (gameOver) {
+                turnIndicator.innerText = result?.reason === 'stock-empty'
+                    ? 'Deste bitti: el sonucu hesaplandı.'
+                    : 'El sona erdi.';
+                turnIndicator.style.background = 'linear-gradient(135deg, #8e44ad, #5b2c6f)';
+            } else if (isMyTurn) {
+                turnIndicator.innerText = isInitialDiscard
+                    ? 'İlk hamle: 22 taşından birini at.'
+                    : hasDrawn ? "Sıra sende: per aç veya taş at." : "Sıra sende: taş çek.";
+                turnIndicator.style.background = "linear-gradient(135deg, #27ae60, #2ea043)";
+            } else {
+                turnIndicator.innerText = "Sıra Rakipte / Botlarda...";
+                turnIndicator.style.background = "rgba(180, 40, 40, 0.85)";
+            }
+
+            const discardBox = document.getElementById('discard-pile-box');
+            if (topDiscard) {
+                discardBox.className = `discard-pile tile ${topDiscard.color}${topDiscard.isOkey ? ' okey-tile' : ''} pop-anim`;
+                discardBox.innerText = topDiscard.color === 'fake-joker' ? topDiscard.representedValue : topDiscard.value;
+                discardBox.title = 'Solundaki oyuncunun son attığı taşı al (yalnızca açabiliyorsan)';
+            } else {
+                discardBox.className = 'discard-pile';
+                discardBox.innerHTML = '<span class="discard-placeholder">Atılan</span>';
+                discardBox.title = 'Atılan taş yok';
+            }
+        });
+
+        function resetClientGame() {
+            rackSlots.fill(null);
+            selectedTileIds.clear();
+            openedMelds = [];
+            hasOpened = false;
+            openingMode = null;
+            hasDrawn = false;
+            isMyTurn = false;
+            isGameOver = false;
+            isInitialDiscard = false;
+            meldOpenPending = false;
+            renderRack();
+        }
+
+        function renderHandResult(result, gameOver) {
+            const overlay = document.getElementById('hand-result');
+            if (!gameOver || !result) {
+                overlay.classList.add('hidden');
+                return;
+            }
+
+            const winnerName = result.penalties.find(entry => entry.playerId === result.winnerId)?.name;
+            const title = result.reason === 'stock-empty'
+                ? winnerName ? `${winnerName} daha az ceza aldı!` : 'El berabere bitti.'
+                : result.winnerId === myPlayerId ? 'Eli kazandın!' : `${winnerName || 'Rakip'} eli bitirdi.`;
+            document.getElementById('hand-result-title').innerText = title;
+            document.getElementById('hand-result-summary').innerText = result.reason === 'stock-empty'
+                ? 'Deste tükendi; elde kalan taşların cezası karşılaştırıldı.'
+                : `El, oyunculardan biri taşlarını bitirince sona erdi. Ceza çarpanı: x${result.multiplier}.`;
+            document.getElementById('hand-result-summary').innerText += ' Sıralama toplam ceza puanına göredir; en düşük ceza birinci olur.';
+
+            const scores = document.getElementById('hand-result-scores');
+            scores.replaceChildren();
+            const rankedPlayers = [...result.penalties].sort((first, second) =>
+                first.totalPoints - second.totalPoints || first.points - second.points
+            );
+            let previousTotal = null;
+            let previousRank = 0;
+            rankedPlayers.forEach((entry, index) => {
+                const rank = entry.totalPoints === previousTotal ? previousRank : index + 1;
+                previousTotal = entry.totalPoints;
+                previousRank = rank;
+
+                const row = document.createElement('li');
+                row.className = 'hand-result-score';
+                if (entry.playerId === result.winnerId) row.classList.add('hand-result-winner');
+
+                const rankLabel = document.createElement('span');
+                rankLabel.className = 'hand-result-rank';
+                rankLabel.innerText = `${rank}.`;
+                const name = document.createElement('span');
+                name.className = 'hand-result-player';
+                name.innerText = entry.name;
+                if (entry.playerId === result.winnerId) {
+                    const winnerBadge = document.createElement('span');
+                    winnerBadge.className = 'hand-result-winner-badge';
+                    winnerBadge.innerText = 'El kazananı';
+                    name.appendChild(winnerBadge);
+                }
+                const handPoints = document.createElement('span');
+                handPoints.className = `hand-result-points${entry.points < 0 ? ' positive' : ''}`;
+                handPoints.innerText = `${entry.points > 0 ? '+' : ''}${entry.points}`;
+                const totalPoints = document.createElement('span');
+                totalPoints.className = 'hand-result-total';
+                totalPoints.innerText = entry.totalPoints;
+
+                row.append(rankLabel, name, handPoints, totalPoints);
+                scores.appendChild(row);
+            });
+            overlay.classList.remove('hidden');
+        }
+
+        // Akıllı Güncelleme: Istakadaki mevcut dizilimi ASLA bozmaz, atılanı siler, yeni geleni ilk boşluğa koyar
+        function smartUpdateRack(serverTiles) {
+            const uniqueTiles = new Map(serverTiles.map(tile => [tile.id, tile]));
+            const remainingTiles = new Map(uniqueTiles);
+
+            // Taşların mevcut sırasını koru ve aynı kimliğin ikinci kopyasını temizle.
+            for (let index = 0; index < rackSlots.length; index++) {
+                const tile = rackSlots[index];
+                if (!tile) continue;
+
+                const serverTile = remainingTiles.get(tile.id);
+                if (!serverTile) {
+                    rackSlots[index] = null;
+                    continue;
+                }
+
+                rackSlots[index] = serverTile;
+                remainingTiles.delete(tile.id);
+            }
+
+            // Sunucuda olup ıstakada bulunmayan taşları boşluklara ekle.
+            for (const tile of uniqueTiles.values()) {
+                if (!remainingTiles.has(tile.id)) continue;
+
+                const emptyIndex = rackSlots.findIndex(slot => slot === null);
+                if (emptyIndex === -1) break;
+
+                rackSlots[emptyIndex] = tile;
+                remainingTiles.delete(tile.id);
+            }
+        }
+
+        function updateRackStats(tiles, openedMelds) {
+            const seriesTotal = OkeyRules.getBestMeldScore(tiles);
+            const seriesTarget = hasOpened ? 1 : 101;
+            document.getElementById('potential-meld-total').innerText = seriesTotal;
+            document.getElementById('series-target').innerText = hasOpened ? '1+' : '101';
+            document.getElementById('series-total-stat').classList.toggle('ready-to-open', seriesTotal >= seriesTarget);
+            document.getElementById('available-pair-count').innerText = OkeyRules.countAvailablePairs(tiles);
+            document.getElementById('selected-count').innerText = selectedTileIds.size;
+            document.getElementById('opened-meld-total').innerText = openedMelds.reduce((total, meld) => total + meld.score, 0);
+        }
+
+        function renderOpenedMelds(openedMelds) {
+            const container = document.getElementById('opened-sets-container');
+            container.replaceChildren();
+
+            openedMelds.forEach(meld => {
+                const group = document.createElement('div');
+                group.className = 'opened-meld';
+                group.dataset.owner = meld.ownerName;
+                group.title = `${meld.ownerName}: ${meld.score} puan`;
+
+                meld.tiles.forEach(tile => {
+                    const tileElement = document.createElement('div');
+                    tileElement.className = `tile ${tile.color}${tile.isOkey ? ' okey-tile' : ''}`;
+                    tileElement.innerText = tile.color === 'fake-joker' ? tile.representedValue : tile.value;
+                    group.appendChild(tileElement);
+                });
+
+                const score = document.createElement('span');
+                score.className = 'opened-meld-score';
+                score.innerText = meld.score;
+                group.appendChild(score);
+                container.appendChild(group);
+            });
+        }
+
+        function renderRack(animatedTileIds = new Set()) {
+            const previousPositions = new Map([...document.querySelectorAll('#rack .tile[data-tile-id]')]
+                .map(tileElement => [Number(tileElement.dataset.tileId), tileElement.getBoundingClientRect()]));
+            const row1 = document.getElementById('row-1');
+            const row2 = document.getElementById('row-2');
+            row1.innerHTML = '';
+            row2.innerHTML = '';
+            let animationIndex = 0;
+
+            for (let i = 0; i < 30; i++) {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'rack-slot';
+                slotDiv.dataset.slotIndex = i;
+
+                const tile = rackSlots[i];
+                if (tile) {
+                    const tileDiv = document.createElement('div');
+                    tileDiv.className = `tile ${tile.color}${tile.isOkey ? ' okey-tile' : ''}`;
+                    tileDiv.dataset.tileId = tile.id;
+                    if (selectedTileIds.has(tile.id)) tileDiv.classList.add('selected');
+                    tileDiv.innerText = tile.color === 'fake-joker' ? tile.representedValue : tile.value;
+                    const playableMeld = openingMode === 'series'
+                        ? openedMelds.find(meld => OkeyRules.canProcessTile(tile, meld) || OkeyRules.canTakeOkey(tile, meld))
+                        : null;
+                    if (playableMeld) {
+                        tileDiv.classList.add('workable');
+                        tileDiv.title = `İşlek taş: ${playableMeld.ownerName} perine eklenebilir`;
+                        const marker = document.createElement('span');
+                        marker.className = 'workable-marker';
+                        marker.innerText = 'İ';
+                        tileDiv.appendChild(marker);
+                    }
+                    if (animatedTileIds.has(tile.id)) {
+                        tileDiv.classList.add('tile-enter');
+                        tileDiv.style.setProperty('--tile-enter-delay', `${Math.min(animationIndex++, 12) * 24}ms`);
+                    }
+
+                    tileDiv.addEventListener('dblclick', (e) => {
+                        e.stopPropagation();
+                        if (isMyTurn && hasDrawn) {
+                            tileDiv.classList.add('discard-anim');
+                            setTimeout(() => {
+                                rackSlots[i] = null; // Yerel olarak da temizle
+                                socket.emit('discard-tile', tile.id);
+                            }, 200);
+                        } else if (!hasDrawn) {
+                            alert("Önce desteden taş çekmelisin!");
+                        } else {
+                            alert("Sıra sende değil!");
+                        }
+                    });
+
+                    tileDiv.addEventListener('click', () => {
+                        if (!isMyTurn || !hasDrawn) return;
+                        if (selectedTileIds.has(tile.id)) selectedTileIds.delete(tile.id);
+                        else selectedTileIds.add(tile.id);
+                        tileDiv.classList.toggle('selected', selectedTileIds.has(tile.id));
+                        document.getElementById('selected-count').innerText = selectedTileIds.size;
+                        document.getElementById('meld-action-message').innerText = '';
+                        updateOpenButtons();
+                    });
+
+                    tileDiv.addEventListener('pointerdown', (event) => {
+                        if (event.button !== 0) return;
+                        event.preventDefault();
+                        draggedTile = {
+                            element: tileDiv,
+                            tileId: tile.id,
+                            slotIndex: i,
+                            startX: event.clientX,
+                            startY: event.clientY
+                        };
+                        tileDiv.style.zIndex = 1000;
+                        tileDiv.classList.add('dragging');
+                    });
+
+                    slotDiv.appendChild(tileDiv);
+                }
+
+                if (i < 15) {
+                    row1.appendChild(slotDiv);
+                } else {
+                    row2.appendChild(slotDiv);
+                }
+            }
+
+            requestAnimationFrame(() => {
+                document.querySelectorAll('#rack .tile[data-tile-id]').forEach(tileElement => {
+                    const tileId = Number(tileElement.dataset.tileId);
+                    const previous = previousPositions.get(tileId);
+                    if (!previous || animatedTileIds.has(tileId)) return;
+
+                    const current = tileElement.getBoundingClientRect();
+                    const offsetX = previous.left - current.left;
+                    const offsetY = previous.top - current.top;
+                    if (Math.abs(offsetX) < 1 && Math.abs(offsetY) < 1) return;
+
+                    tileElement.animate([
+                        { transform: `translate(${offsetX}px, ${offsetY}px)` },
+                        { transform: 'translate(0, 0)' }
+                    ], { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+                });
+            });
+        }
+    </script>
+</body>
+</html>
