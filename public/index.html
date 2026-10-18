@@ -694,7 +694,7 @@
             overlay.classList.remove('hidden');
         }
 
-        // Akıllı Güncelleme: Istakadaki dizilimi korur, atılanı siler, yeni taşı sona ekler.
+        // Akıllı Güncelleme: Mevcut taşları yerinde tutar; yeni taşı sona veya boş yuvaya ekler.
         function smartUpdateRack(serverTiles) {
             const isFirstRackUpdate = rackSlots.every(tile => tile === null);
             const uniqueTiles = new Map(serverTiles.map(tile => [tile.id, tile]));
@@ -727,11 +727,8 @@
                     }
                 }
                 let emptyIndex = lastOccupiedIndex + 1;
-                if (emptyIndex >= rackSlots.length) {
-                    const orderedTiles = rackSlots.filter(slot => slot !== null);
-                    rackSlots.fill(null);
-                    orderedTiles.forEach((rackTile, index) => { rackSlots[index] = rackTile; });
-                    emptyIndex = orderedTiles.length;
+                if (emptyIndex >= rackSlots.length || rackSlots[emptyIndex] !== null) {
+                    emptyIndex = rackSlots.findIndex(slot => slot === null);
                 }
                 if (emptyIndex < 0 || emptyIndex >= rackSlots.length) break;
 
@@ -742,6 +739,7 @@
             if (isFirstRackUpdate) {
                 const initialTiles = rackSlots.filter(tile => tile !== null).sort(compareTilesForSeries);
                 const availableGaps = Math.max(0, rackSlots.length - initialTiles.length);
+                const gapsToPlace = Math.max(0, availableGaps - 1);
                 let gapsPlaced = 0;
                 let slotIndex = 0;
                 rackSlots.fill(null);
@@ -749,7 +747,7 @@
                     rackSlots[slotIndex++] = tile;
                     if (index < initialTiles.length - 1
                         && shouldSeparateSeriesTiles(tile, initialTiles[index + 1])
-                        && gapsPlaced < availableGaps) {
+                        && gapsPlaced < gapsToPlace) {
                         slotIndex++;
                         gapsPlaced++;
                     }
