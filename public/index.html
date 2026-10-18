@@ -111,7 +111,6 @@
             <div class="action-buttons-stack">
                 <button class="plus-action-btn" id="open-series-btn"><span class="btn-icon">🎴</span> SERİ AÇ</button>
                 <button class="plus-action-btn" id="open-pairs-btn"><span class="btn-icon">👯</span> ÇİFT AÇ</button>
-                <button class="plus-action-btn grey" disabled>GERİ TOPLA</button>
                 <button class="plus-action-btn grey" id="process-tile-btn" disabled>TAŞLARI İŞLE</button>
             </div>
         </div>
@@ -138,6 +137,7 @@
                 <span class="rack-stat">Çift <strong id="available-pair-count">0</strong><span>/ <span id="pairs-target">5</span></span></span>
                 <span class="rack-stat">Seçili <strong id="selected-count">0</strong></span>
                 <span class="rack-stat">Masadaki per <strong id="opened-meld-total">0</strong></span>
+                <span class="rack-hint">Sürükleyip bırak · Atmak için çift tıkla</span>
                 <span id="meld-action-message" role="status"></span>
             </div>
 
@@ -191,33 +191,39 @@
         let isInitialDiscard = false;
 
         window.addEventListener('pointermove', (event) => {
-            if (!draggedTile) return;
+            if (!draggedTile || draggedTile.pointerId !== event.pointerId) return;
             const diffX = event.clientX - draggedTile.startX;
             const diffY = event.clientY - draggedTile.startY;
+            if (!draggedTile.isDragging && Math.hypot(diffX, diffY) < 6) return;
+
+            draggedTile.isDragging = true;
+            draggedTile.element.style.pointerEvents = 'none';
             draggedTile.element.style.transform = `translate(${diffX}px, ${diffY}px) scale(1.08)`;
         });
 
-        window.addEventListener('pointerup', (event) => {
-            if (!draggedTile) return;
+        window.addEventListener('pointerup', finishRackDrag);
+        window.addEventListener('pointercancel', finishRackDrag);
+
+        function finishRackDrag(event) {
+            if (!draggedTile || draggedTile.pointerId !== event.pointerId) return;
 
             const drag = draggedTile;
+            const targetElement = drag.isDragging ? document.elementFromPoint(event.clientX, event.clientY) : null;
+            const targetSlot = targetElement?.closest('.rack-slot');
+            const targetIndex = targetSlot ? Number(targetSlot.dataset.slotIndex) : -1;
             draggedTile = null;
             drag.element.style.zIndex = '';
+            drag.element.style.pointerEvents = '';
             drag.element.classList.remove('dragging');
             drag.element.style.transform = '';
 
-            if (rackSlots[drag.slotIndex]?.id !== drag.tileId) return;
-
-            const elemBelow = document.elementFromPoint(event.clientX, event.clientY);
-            const targetSlot = elemBelow ? elemBelow.closest('.rack-slot') : null;
-            if (!targetSlot) return;
-
-            const targetIndex = Number(targetSlot.dataset.slotIndex);
-            if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= rackSlots.length || drag.slotIndex === targetIndex) return;
+            if (!drag.isDragging || rackSlots[drag.slotIndex]?.id !== drag.tileId
+                || !Number.isInteger(targetIndex) || targetIndex < 0
+                || targetIndex >= rackSlots.length || drag.slotIndex === targetIndex) return;
 
             [rackSlots[drag.slotIndex], rackSlots[targetIndex]] = [rackSlots[targetIndex], rackSlots[drag.slotIndex]];
             renderRack();
-        });
+        }
 
         document.getElementById('create-room-btn').addEventListener('click', () => {
             quickStart = false;
@@ -771,6 +777,7 @@
                     const tileDiv = document.createElement('div');
                     tileDiv.className = `tile ${tile.color}${tile.isOkey ? ' okey-tile' : ''}`;
                     tileDiv.dataset.tileId = tile.id;
+                    tileDiv.title = 'Dizmek için sürükle · Seçmek için tıkla · Atmak için çift tıkla';
                     if (selectedTileIds.has(tile.id)) tileDiv.classList.add('selected');
                     tileDiv.innerText = tile.color === 'fake-joker' ? tile.representedValue : tile.value;
                     const playableMeld = openingMode === 'series'
@@ -816,14 +823,17 @@
 
                     tileDiv.addEventListener('pointerdown', (event) => {
                         if (event.button !== 0) return;
-                        event.preventDefault();
+                        if (draggedTile) return;
                         draggedTile = {
                             element: tileDiv,
                             tileId: tile.id,
                             slotIndex: i,
+                            pointerId: event.pointerId,
                             startX: event.clientX,
-                            startY: event.clientY
+                            startY: event.clientY,
+                            isDragging: false
                         };
+                        tileDiv.setPointerCapture(event.pointerId);
                         tileDiv.style.zIndex = 1000;
                         tileDiv.classList.add('dragging');
                     });
