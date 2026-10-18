@@ -1053,9 +1053,9 @@ body {
     #opened-sets-container { inset: 12px; gap: 8px; }
     .opened-meld { padding: 10px 6px 20px; }
     .opened-meld .tile { width: 28px; height: 36px; font-size: 15px; }
-    .left-player { top: 31%; left: 1%; }
+    .left-player { top: 39%; left: 1%; }
     .top-player { top: 8%; left: 34%; }
-    .right-player { top: 31%; right: 1%; }
+    .right-player { top: 39%; right: 1%; }
     .player-profile { min-width: 70px; padding: 5px 7px; border-radius: 12px; }
     .avatar { width: 34px; height: 34px; font-size: 12px; }
     .name { max-width: 85px; font-size: 10px; }
@@ -1131,8 +1131,8 @@ body {
     display: grid;
     grid-template-columns: repeat(15, minmax(0, 1fr));
     grid-template-rows: repeat(2, minmax(0, 1fr));
-    gap: 5px 3px;
-    padding: 7px;
+    gap: 4px 3px;
+    padding: 6px;
 }
 
 .rack-row {
@@ -1146,22 +1146,57 @@ body {
 }
 
 #rack .tile {
-    width: min(58px, calc(100% - 2px));
-    height: 39px;
-    border-radius: 6px;
-    font-size: clamp(14px, 1.4vw, 20px);
+    width: min(40px, calc(100% - 2px));
+    height: 50px;
+    border: 1px solid #aaa694;
+    border-radius: 4px;
+    background: linear-gradient(155deg, #fffefa 0%, #f4f1e7 78%, #ddd8c9 100%);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.95);
+    font-size: clamp(16px, 1.5vw, 20px);
+}
+
+#opened-sets-container {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: 70px;
+    align-content: start;
+    justify-content: stretch;
+    gap: 3px 0;
+    overflow: auto;
+}
+
+.opened-meld {
+    grid-column: span 6;
+    align-self: start;
+    justify-self: start;
+    gap: 1px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 13px 0 15px;
+    overflow: hidden;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+}
+
+.opened-meld::before {
+    display: none;
 }
 
 .opened-meld .tile {
-    width: 43px;
-    height: 31px;
-    border-radius: 5px;
-    font-size: 16px;
+    flex: 0 0 26px;
+    width: 26px;
+    height: 38px;
+    border-radius: 3px;
+    font-size: 15px;
 }
 
 .discard-pile.tile {
-    width: 58px;
-    height: 40px;
+    width: 43px;
+    height: 54px;
 }
 
 @media (max-width: 900px) {
@@ -1171,7 +1206,19 @@ body {
     }
 
     #rack .tile {
+        width: min(36px, calc(100% - 2px));
+        height: 45px;
+    }
+
+    .opened-meld {
+        grid-column: span 6;
+    }
+
+    .opened-meld .tile {
+        flex-basis: 23px;
+        width: 23px;
         height: 34px;
+        font-size: 13px;
     }
 }
 
@@ -1185,23 +1232,50 @@ body {
         grid-template-rows: repeat(3, minmax(0, 1fr));
         gap: 3px 2px;
         padding: 5px;
+        height: 156px;
     }
 
     #rack .tile {
         width: calc(100% - 1px);
-        height: clamp(19px, 6.2vw, 24px);
+        height: clamp(34px, 10.8vw, 42px);
         border-radius: 4px;
-        font-size: clamp(10px, 3.1vw, 14px);
+        font-size: clamp(12px, 3.8vw, 16px);
+    }
+
+    #opened-sets-container {
+        grid-auto-rows: 56px;
+        gap: 2px 0;
+    }
+
+    .my-profile {
+        top: -68px;
+    }
+
+    .opened-meld {
+        grid-column: span 12;
+        padding: 12px 0 14px;
     }
 
     .opened-meld .tile {
-        width: 36px;
-        height: 26px;
-        font-size: 13px;
+        flex: 0 1 24px;
+        width: 24px;
+        height: 32px;
+        min-width: 0;
+        font-size: 12px;
     }
 
     .discard-pile.tile {
-        width: 42px;
-        height: 30px;
+        width: 34px;
+        height: 44px;
+    }
+
+    .opened-meld-score {
+        right: 1px;
+        bottom: 0;
+        font-size: 9px;
+    }
+
+    .rack-side-btn {
+        bottom: 190px;
     }
 }
