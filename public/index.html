@@ -829,10 +829,24 @@
                 const existingTileIds = previousMeldTiles.get(meld.id) || new Set();
 
                 meld.tiles.forEach((tile, index) => {
+                    const representedSlot = meld.slots?.find(slot => slot.tileId === tile.id);
+                    const displayColor = representedSlot?.color
+                        || (tile.color === 'fake-joker' ? tile.representedColor : tile.color);
+                    const displayValue = representedSlot?.value
+                        ?? (tile.color === 'fake-joker' ? tile.representedValue : tile.value);
                     const tileElement = document.createElement('div');
-                    tileElement.className = `tile ${tile.color}${tile.isOkey ? ' okey-tile' : ''}`;
+                    tileElement.className = `tile ${displayColor}${tile.isOkey ? ' okey-tile' : ''}`;
                     tileElement.dataset.tileId = tile.id;
-                    tileElement.innerText = tile.color === 'fake-joker' ? tile.representedValue : tile.value;
+                    tileElement.innerText = displayValue;
+                    if (tile.isOkey && representedSlot) {
+                        tileElement.classList.add('okey-substitute');
+                        tileElement.title = `Okey · ${displayColor} ${displayValue} yerine`;
+                        const marker = document.createElement('span');
+                        marker.className = 'meld-wildcard-badge';
+                        marker.setAttribute('aria-label', 'Okey taşı');
+                        marker.innerText = 'O';
+                        tileElement.appendChild(marker);
+                    }
                     if (newlyOpenedMeldIds.has(meld.id) || !existingTileIds.has(tile.id)) {
                         tileElement.classList.add('meld-tile-enter');
                         tileElement.style.setProperty('--meld-tile-delay', `${Math.min(index, 8) * 55}ms`);

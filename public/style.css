@@ -1342,6 +1342,30 @@ body {
     height: 36px;
 }
 
+.opened-meld .tile.okey-substitute {
+    position: relative;
+    overflow: visible;
+}
+
+.meld-wildcard-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    width: 11px;
+    height: 11px;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #c65c18;
+    border: 1px solid #fff0c7;
+    border-radius: 50%;
+    font-size: 7px;
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+}
+
 .opened-meld-score {
     right: 2px;
     bottom: 0;
@@ -1422,6 +1446,14 @@ body {
         width: 22px;
         height: 31px;
         font-size: 12px;
+    }
+
+    .meld-wildcard-badge {
+        top: -3px;
+        right: -3px;
+        width: 9px;
+        height: 9px;
+        font-size: 6px;
     }
 
     .opened-meld-score {

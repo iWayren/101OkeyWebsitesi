@@ -47,6 +47,24 @@ test('uses the actual okey as a wildcard and the fake okey as its face value', (
     assert.equal(rules.getHandPenalty([{ id: 6, color: 'fake-joker', value: 'J', representedValue: 8 }], true), 8);
 });
 
+test('assigns the actual okey the missing value in a run', () => {
+    const hand = [
+        { id: 1, color: 'red', value: 6 },
+        { id: 2, color: 'red', value: 11, isOkey: true },
+        { id: 3, color: 'red', value: 8 },
+        { id: 4, color: 'red', value: 9 }
+    ];
+    const plan = rules.getBestOpeningPlan(hand, 'series');
+    const okeySlot = plan.melds.flatMap(meld => meld.slots).find(slot => slot.tileId === 2);
+
+    assert.equal(plan.score, 30);
+    assert.deepEqual(
+        plan.melds.flatMap(meld => meld.slots).map(slot => slot.value),
+        [6, 7, 8, 9]
+    );
+    assert.deepEqual(okeySlot, { color: 'red', value: 7, tileId: 2 });
+});
+
 test('recognizes a matching pair added to an opened pair meld', () => {
     const handPair = makeTiles([['blue', 8], ['blue', 8]]);
     const openedPair = {
