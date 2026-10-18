@@ -86,7 +86,13 @@
         <!-- ORTA MASA MATRİS -->
         <div id="center-board-grid">
             <div class="watermark-101">101</div>
-            <div id="opened-sets-container"></div>
+            <div id="table-notification" role="status" aria-live="polite"></div>
+            <div id="opened-sets-container">
+                <div class="opened-player-zone" data-seat="2"></div>
+                <div class="opened-player-zone" data-seat="1"></div>
+                <div class="opened-player-zone" data-seat="3"></div>
+                <div class="opened-player-zone" data-seat="0"></div>
+            </div>
         </div>
 
         <!-- SAĞ SAHA BİLGİ & BUTON PANELİ -->
@@ -187,6 +193,8 @@
         let hasOpened = false;
         let openingMode = null;
         let openedMelds = [];
+        let knownOpenedMeldIds = null;
+        let tableNotificationTimeout = null;
         let isGameOver = false;
         let isInitialDiscard = false;
 
@@ -545,6 +553,11 @@
         socket.on('game-state', (data) => {
             const { players, deckCount, topDiscard, indicator, okey, firstTurn = false, currentTurnIndex, gameStarted, gameOver = false, result = null, openedMelds: currentOpenedMelds = [] } = data;
             if (!gameStarted) return;
+            if (isGameOver && !gameOver) knownOpenedMeldIds = null;
+            const newlyOpenedMelds = knownOpenedMeldIds === null
+                ? []
+                : currentOpenedMelds.filter(meld => !knownOpenedMeldIds.has(meld.id));
+            knownOpenedMeldIds = new Set(currentOpenedMelds.map(meld => meld.id));
             myPlayerId = data.myPlayerId;
             isGameOver = gameOver;
             isInitialDiscard = firstTurn && currentTurnIndex === 0;
@@ -587,7 +600,13 @@
                 updateRackStats(me.tiles, currentOpenedMelds);
                 renderRack(newTileIds);
             }
-            renderOpenedMelds(currentOpenedMelds);
+            renderOpenedMelds(currentOpenedMelds, players, new Set(newlyOpenedMelds.map(meld => meld.id)));
+            if (newlyOpenedMelds.length > 0) {
+                const newlyOpenedScore = newlyOpenedMelds.reduce((total, meld) => total + meld.score, 0);
+                const ownerName = newlyOpenedMelds[0].ownerName;
+                const openingType = newlyOpenedMelds.every(meld => meld.type === 'pair') ? 'çift' : 'seri';
+                showTableNotification(`${ownerName}, ${newlyOpenedScore} puanla ${openingType} açtı`);
+            }
             document.getElementById('indicator-info').innerText = indicator && okey
                 ? `Gösterge: ${displayTileValue(indicator)} · Okey: ${displayTileValue(okey)}`
                 : '';
@@ -626,6 +645,9 @@
             rackSlots.fill(null);
             selectedTileIds.clear();
             openedMelds = [];
+            knownOpenedMeldIds = null;
+            if (tableNotificationTimeout) clearTimeout(tableNotificationTimeout);
+            document.getElementById('table-notification').classList.remove('visible');
             hasOpened = false;
             openingMode = null;
             hasDrawn = false;
@@ -766,20 +788,55 @@
             document.getElementById('opened-meld-total').innerText = openedMelds.reduce((total, meld) => total + meld.score, 0);
         }
 
-        function renderOpenedMelds(openedMelds) {
+        function showTableNotification(message) {
+            const notification = document.getElementById('table-notification');
+            notification.textContent = message;
+            notification.classList.remove('visible');
+            requestAnimationFrame(() => notification.classList.add('visible'));
+            if (tableNotificationTimeout) clearTimeout(tableNotificationTimeout);
+            tableNotificationTimeout = setTimeout(() => notification.classList.remove('visible'), 3600);
+        }
+
+        function renderOpenedMelds(openedMelds, players, newlyOpenedMeldIds = new Set()) {
             const container = document.getElementById('opened-sets-container');
-            container.replaceChildren();
+            const zones = new Map([...container.querySelectorAll('.opened-player-zone')]
+                .map(zone => [Number(zone.dataset.seat), zone]));
+            const previousMeldTiles = new Map([...container.querySelectorAll('.opened-meld[data-meld-id]')]
+                .map(group => [
+                    Number(group.dataset.meldId),
+                    new Set([...group.querySelectorAll('.tile[data-tile-id]')].map(tile => Number(tile.dataset.tileId)))
+                ]));
+            zones.forEach(zone => {
+                zone.replaceChildren();
+                zone.dataset.owner = '';
+                zone.classList.remove('has-melds');
+            });
 
             openedMelds.forEach(meld => {
+                const ownerSeat = players.findIndex(player => player.id === meld.ownerId);
+                const zone = zones.get(ownerSeat) || zones.get(0);
+                if (!zone) return;
+                zone.dataset.owner = meld.ownerName;
+                zone.classList.add('has-melds');
+
                 const group = document.createElement('div');
                 group.className = 'opened-meld';
+                group.dataset.meldId = meld.id;
                 group.dataset.owner = meld.ownerName;
                 group.title = `${meld.ownerName}: ${meld.score} puan`;
+                if (newlyOpenedMeldIds.has(meld.id)) group.classList.add('meld-enter');
 
-                meld.tiles.forEach(tile => {
+                const existingTileIds = previousMeldTiles.get(meld.id) || new Set();
+
+                meld.tiles.forEach((tile, index) => {
                     const tileElement = document.createElement('div');
                     tileElement.className = `tile ${tile.color}${tile.isOkey ? ' okey-tile' : ''}`;
+                    tileElement.dataset.tileId = tile.id;
                     tileElement.innerText = tile.color === 'fake-joker' ? tile.representedValue : tile.value;
+                    if (newlyOpenedMeldIds.has(meld.id) || !existingTileIds.has(tile.id)) {
+                        tileElement.classList.add('meld-tile-enter');
+                        tileElement.style.setProperty('--meld-tile-delay', `${Math.min(index, 8) * 55}ms`);
+                    }
                     group.appendChild(tileElement);
                 });
 
@@ -787,7 +844,7 @@
                 score.className = 'opened-meld-score';
                 score.innerText = meld.score;
                 group.appendChild(score);
-                container.appendChild(group);
+                zone.appendChild(group);
             });
         }
 
