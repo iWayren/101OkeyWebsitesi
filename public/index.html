@@ -448,23 +448,27 @@
             renderRack();
         }
 
+        function compareTilesForSeries(a, b) {
+            const specialTileOrder = tile => tile.color === 'joker' || tile.color === 'fake-joker' ? 1 : 0;
+            const specialTileDifference = specialTileOrder(a) - specialTileOrder(b);
+            if (specialTileDifference !== 0) return specialTileDifference;
+            if (a.color !== b.color) return a.color.localeCompare(b.color);
+            return (typeof a.value === 'number' ? a.value : 14) - (typeof b.value === 'number' ? b.value : 14);
+        }
+
+        function shouldSeparateSeriesTiles(current, next) {
+            return current.color !== next.color
+                || (typeof current.value === 'number' && next.value !== current.value + 1 && next.value !== current.value);
+        }
+
         // SERİ DİZ
         document.getElementById('seri-diz-btn').addEventListener('click', () => {
             const activeTiles = rackSlots.filter(tile => tile !== null);
             if (activeTiles.length === 0) return;
 
-            activeTiles.sort((a, b) => {
-                if (a.color === 'joker') return 1;
-                if (b.color === 'joker') return -1;
-                if (a.color !== b.color) return a.color.localeCompare(b.color);
-                return a.value - b.value;
-            });
+            activeTiles.sort(compareTilesForSeries);
 
-            placeTilesWithGaps(activeTiles, index => {
-                const current = activeTiles[index];
-                const next = activeTiles[index + 1];
-                return current.color !== next.color || (typeof current.value === 'number' && next.value !== current.value + 1 && next.value !== current.value);
-            });
+            placeTilesWithGaps(activeTiles, index => shouldSeparateSeriesTiles(activeTiles[index], activeTiles[index + 1]));
         });
 
         // ÇİFT DİZ
@@ -690,8 +694,9 @@
             overlay.classList.remove('hidden');
         }
 
-        // Akıllı Güncelleme: Istakadaki mevcut dizilimi ASLA bozmaz, atılanı siler, yeni geleni ilk boşluğa koyar
+        // Akıllı Güncelleme: Istakadaki dizilimi korur, atılanı siler, yeni taşı sona ekler.
         function smartUpdateRack(serverTiles) {
+            const isFirstRackUpdate = rackSlots.every(tile => tile === null);
             const uniqueTiles = new Map(serverTiles.map(tile => [tile.id, tile]));
             const remainingTiles = new Map(uniqueTiles);
 
@@ -714,11 +719,41 @@
             for (const tile of uniqueTiles.values()) {
                 if (!remainingTiles.has(tile.id)) continue;
 
-                const emptyIndex = rackSlots.findIndex(slot => slot === null);
-                if (emptyIndex === -1) break;
+                let lastOccupiedIndex = -1;
+                for (let index = rackSlots.length - 1; index >= 0; index--) {
+                    if (rackSlots[index] !== null) {
+                        lastOccupiedIndex = index;
+                        break;
+                    }
+                }
+                let emptyIndex = lastOccupiedIndex + 1;
+                if (emptyIndex >= rackSlots.length) {
+                    const orderedTiles = rackSlots.filter(slot => slot !== null);
+                    rackSlots.fill(null);
+                    orderedTiles.forEach((rackTile, index) => { rackSlots[index] = rackTile; });
+                    emptyIndex = orderedTiles.length;
+                }
+                if (emptyIndex < 0 || emptyIndex >= rackSlots.length) break;
 
                 rackSlots[emptyIndex] = tile;
                 remainingTiles.delete(tile.id);
+            }
+
+            if (isFirstRackUpdate) {
+                const initialTiles = rackSlots.filter(tile => tile !== null).sort(compareTilesForSeries);
+                const availableGaps = Math.max(0, rackSlots.length - initialTiles.length);
+                let gapsPlaced = 0;
+                let slotIndex = 0;
+                rackSlots.fill(null);
+                initialTiles.forEach((tile, index) => {
+                    rackSlots[slotIndex++] = tile;
+                    if (index < initialTiles.length - 1
+                        && shouldSeparateSeriesTiles(tile, initialTiles[index + 1])
+                        && gapsPlaced < availableGaps) {
+                        slotIndex++;
+                        gapsPlaced++;
+                    }
+                });
             }
         }
 
